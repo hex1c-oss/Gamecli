@@ -24,11 +24,15 @@
             position: relative;
             width: 400px;
             height: 600px;
-            background: radial-gradient(circle at 20% 20%, #ffd89b, #19547b);
+            background: radial-gradient(circle at 20% 20%, #8B7355, #4a4a4a);
             border-radius: 30px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             overflow: hidden;
             cursor: pointer;
+            transition: background 0.5s ease;
+        }
+        #gameContainer.rich {
+            background: radial-gradient(circle at 20% 20%, #FFD700, #FFA500, #FF4500);
         }
         canvas {
             display: block;
@@ -135,6 +139,7 @@
             const canvas = document.getElementById('gameCanvas');
             const ctx = canvas.getContext('2d');
             const memeOverlay = document.getElementById('memeOverlay');
+            const gameContainer = document.getElementById('gameContainer');
 
             // UI элементы
             const scoreSpan = document.getElementById('scoreDisplay');
@@ -209,6 +214,8 @@
             let gameActive = false;
             let gameInterval = null;
             let spawnInterval = null;
+            let backgroundChanged = false;
+            const RICH_THRESHOLD = 25; // Порог очков для смены фона
 
             // Класс шарика
             class Balloon {
@@ -344,6 +351,23 @@
                 }
             }
 
+            // Функция проверки и смены фона
+            function checkBackgroundChange() {
+                if (score >= RICH_THRESHOLD && !backgroundChanged) {
+                    backgroundChanged = true;
+                    gameContainer.classList.add('rich');
+                    
+                    // Показываем сообщение о трансформации
+                    messageDiv.textContent = '💰 КВАДРОБЕР СТАЛ БОГАТЫМ! 💰';
+                    messageDiv.style.display = 'block';
+                    playComboSound();
+                    setTimeout(() => { 
+                        messageDiv.style.display = 'none'; 
+                        messageDiv.textContent = '🎉 МЕМО-КОМБО! 🎉';
+                    }, 1500);
+                }
+            }
+
             // Функция показа мема на весь экран
             function showMemePopup() {
                 const memes = ['😂', '🤣', '💀', '🔥', '✨', '🎉', '⭐', '🚀'];
@@ -409,7 +433,10 @@
                         // Показываем мем!
                         showMemePopup();
 
-                        if (score % 5 === 0) {
+                        // Проверяем смену фона
+                        checkBackgroundChange();
+
+                        if (score % 5 === 0 && score < RICH_THRESHOLD) {
                             messageDiv.style.display = 'block';
                             playComboSound();
                             setTimeout(() => { messageDiv.style.display = 'none'; }, 700);
@@ -456,17 +483,42 @@
             function drawScene() {
                 ctx.clearRect(0, 0, W, H);
 
-                // Фон с облаками
-                ctx.fillStyle = 'rgba(255,255,255,0.15)';
-                ctx.beginPath();
-                ctx.arc(50, 80, 40, 0, Math.PI*2);
-                ctx.arc(90, 70, 50, 0, Math.PI*2);
-                ctx.arc(130, 85, 35, 0, Math.PI*2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(300, 140, 45, 0, Math.PI*2);
-                ctx.arc(340, 120, 55, 0, Math.PI*2);
-                ctx.fill();
+                // Фон с облаками - разные стили для бедного и богатого
+                if (backgroundChanged) {
+                    // Богатый фон - золотые облака и блёстки
+                    ctx.fillStyle = 'rgba(255,215,0,0.3)';
+                    ctx.beginPath();
+                    ctx.arc(50, 80, 40, 0, Math.PI*2);
+                    ctx.arc(90, 70, 50, 0, Math.PI*2);
+                    ctx.arc(130, 85, 35, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(300, 140, 45, 0, Math.PI*2);
+                    ctx.arc(340, 120, 55, 0, Math.PI*2);
+                    ctx.fill();
+                    
+                    // Блёстки
+                    for (let i = 0; i < 20; i++) {
+                        const x = (Math.sin(i * 132 + Date.now() * 0.001) * 0.5 + 0.5) * W;
+                        const y = (Math.cos(i * 73 + Date.now() * 0.002) * 0.5 + 0.5) * H;
+                        ctx.fillStyle = `rgba(255,255,255,${0.5 + Math.sin(Date.now() * 0.005 + i) * 0.3})`;
+                        ctx.beginPath();
+                        ctx.arc(x, y, 3 + Math.sin(i) * 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                } else {
+                    // Бедный фон - простые серые облака
+                    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+                    ctx.beginPath();
+                    ctx.arc(50, 80, 40, 0, Math.PI*2);
+                    ctx.arc(90, 70, 50, 0, Math.PI*2);
+                    ctx.arc(130, 85, 35, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(300, 140, 45, 0, Math.PI*2);
+                    ctx.arc(340, 120, 55, 0, Math.PI*2);
+                    ctx.fill();
+                }
 
                 balloons.forEach(b => {
                     if (b) b.draw(ctx);
@@ -510,11 +562,14 @@
                 particles = [];
                 score = 0;
                 timeLeft = 30;
+                backgroundChanged = false; // Сбрасываем фон на бедный
                 scoreSpan.textContent = '0';
                 timerSpan.textContent = '30';
                 messageDiv.style.display = 'none';
+                messageDiv.textContent = '🎉 МЕМО-КОМБО! 🎉';
                 restartBtn.style.display = 'none';
                 memeOverlay.innerHTML = '';
+                gameContainer.classList.remove('rich'); // Убираем богатый фон
                 gameActive = true;
 
                 if (gameInterval) clearInterval(gameInterval);
