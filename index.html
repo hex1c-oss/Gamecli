@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>МемоБум 2026 — Лопай шарики!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
+            touch-action: manipulation;
+        }
+        #gameContainer {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: radial-gradient(circle at 20% 20%, #ffd89b, #19547b);
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            cursor: pointer;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        #memeOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        #memeOverlay img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            animation: memePop 0.5s ease-out forwards;
+        }
+        @keyframes memePop {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1.0); opacity: 0; }
+        }
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 #00000050;
+            z-index: 5;
+        }
+        #score {
+            background: #ff4d6d;
+            padding: 5px 15px;
+            border-radius: 20px;
+            box-shadow: 0 4px 0 #b9354f;
+        }
+        #message {
+            position: absolute;
+            bottom: 80px;
+            left: 20px;
+            right: 20px;
+            text-align: center;
+            font-size: 28px;
+            color: gold;
+            font-weight: bold;
+            text-shadow: 3px 3px 0 #000;
+            pointer-events: none;
+            display: none;
+            z-index: 5;
+        }
+        button {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffd166;
+            border: none;
+            color: #3b2b1f;
+            padding: 15px 35px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 40px;
+            box-shadow: 0 6px 0 #c09c4a;
+            cursor: pointer;
+            transition: 0.1s linear;
+            display: none;
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
+            z-index: 10;
+        }
+        button:active {
+            transform: translateX(-50%) translateY(4px);
+            box-shadow: 0 2px 0 #c09c4a;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div id="memeOverlay"></div>
+        <div id="ui">
+            <span>🧨 <span id="scoreDisplay">0</span></span>
+            <span>⏱️ <span id="timerDisplay">30</span>с</span>
+        </div>
+        <div id="message">🎉 МЕМО-КОМБО! 🎉</div>
+        <button id="restartButton">🔄 ИГРАТЬ СНОВА</button>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const memeOverlay = document.getElementById('memeOverlay');
+
+            // UI элементы
+            const scoreSpan = document.getElementById('scoreDisplay');
+            const timerSpan = document.getElementById('timerDisplay');
+            const messageDiv = document.getElementById('message');
+            const restartBtn = document.getElementById('restartButton');
+
+            // Размеры
+            const W = 400, H = 600;
+
+            // Цвета для шариков
+            const balloonColors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA'];
+            
+            // Звуковой контекст
+            let audioCtx = null;
+
+            // Инициализация аудио
+            function initAudio() {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            // Звук лопания
+            function playPopSound() {
+                if (!audioCtx) return;
+                
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.setValueAtTime(800 + Math.random() * 200, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            }
+
+            // Звук комбо
+            function playComboSound() {
+                if (!audioCtx) return;
+                
+                const notes = [523.25, 659.25, 783.99];
+                notes.forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.frequency.value = freq;
+                    osc.type = 'sine';
+                    
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.1 + 0.3);
+                    
+                    osc.start(audioCtx.currentTime + i * 0.1);
+                    osc.stop(audioCtx.currentTime + i * 0.1 + 0.3);
+                });
+            }
+
+            // Игровые переменные
+            let balloons = [];
+            let particles = [];
+            let score = 0;
+            let timeLeft = 30;
+            let gameActive = false;
+            let gameInterval = null;
+            let spawnInterval = null;
+
+            // Класс шарика
+            class Balloon {
+                constructor() {
+                    this.color = balloonColors[Math.floor(Math.random() * balloonColors.length)];
+                    this.radius = 35 + Math.random() * 15;
+                    this.x = Math.random() * (W - this.radius * 2) + this.radius;
+                    this.y = H + this.radius;
+                    this.speedY = -1.8 - Math.random() * 2.5;
+                    this.speedX = (Math.random() - 0.5) * 1.5;
+                    this.wobble = Math.random() * Math.PI * 2;
+                    this.hitboxScale = 0.75;
+                    this.shine = Math.random() * Math.PI * 2;
+                }
+
+                update() {
+                    this.y += this.speedY;
+                    this.x += Math.sin(this.wobble) * 0.8;
+                    this.wobble += 0.03;
+                    this.shine += 0.05;
+                    
+                    if (this.x - this.radius < 0) { 
+                        this.x = this.radius; 
+                        this.speedX *= -0.6; 
+                    }
+                    if (this.x + this.radius > W) { 
+                        this.x = W - this.radius; 
+                        this.speedX *= -0.6; 
+                    }
+                }
+
+                draw(ctx) {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(Math.sin(this.wobble * 0.5) * 0.1);
+                    
+                    // Тень
+                    ctx.beginPath();
+                    ctx.ellipse(0, this.radius + 5, this.radius * 0.6, this.radius * 0.2, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                    ctx.fill();
+                    
+                    // Основной шар
+                    const gradient = ctx.createRadialGradient(
+                        -this.radius * 0.3, -this.radius * 0.3, this.radius * 0.1,
+                        0, 0, this.radius
+                    );
+                    gradient.addColorStop(0, '#ffffff');
+                    gradient.addColorStop(0.3, this.color);
+                    gradient.addColorStop(1, this.darkenColor(this.color, 40));
+                    
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    
+                    // Блик
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        -this.radius * 0.3 + Math.sin(this.shine) * 5,
+                        -this.radius * 0.3 + Math.cos(this.shine) * 5,
+                        this.radius * 0.25,
+                        this.radius * 0.15,
+                        -Math.PI / 4,
+                        0, Math.PI * 2
+                    );
+                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                    ctx.fill();
+                    
+                    // Верёвочка
+                    ctx.beginPath();
+                    ctx.moveTo(0, this.radius);
+                    ctx.quadraticCurveTo(
+                        Math.sin(this.wobble * 2) * 10,
+                        this.radius + 20,
+                        Math.sin(this.wobble * 2) * 8,
+                        this.radius + 35
+                    );
+                    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                }
+
+                darkenColor(color, amount) {
+                    const hex = color.replace('#', '');
+                    const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - amount);
+                    const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - amount);
+                    const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - amount);
+                    return `rgb(${r},${g},${b})`;
+                }
+
+                contains(mx, my) {
+                    const dx = mx - this.x;
+                    const dy = my - this.y;
+                    const effectiveRadius = this.radius * this.hitboxScale;
+                    return (dx * dx + dy * dy) < (effectiveRadius * effectiveRadius);
+                }
+            }
+
+            // Частицы лопания
+            class Particle {
+                constructor(x, y, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.vx = (Math.random() - 0.5) * 8;
+                    this.vy = (Math.random() - 0.5) * 8 - 2;
+                    this.life = 1.0;
+                    this.decay = 0.025 + Math.random() * 0.04;
+                    this.size = 4 + Math.random() * 6;
+                    this.color = color;
+                }
+
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.vy += 0.15;
+                    this.life -= this.decay;
+                }
+
+                draw(ctx) {
+                    ctx.globalAlpha = this.life;
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(this.x - 1, this.y - 1, this.size * 0.4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+
+            // Функция показа мема на весь экран
+            function showMemePopup() {
+                const memes = ['😂', '🤣', '💀', '🔥', '✨', '🎉', '⭐', '🚀'];
+                const randomMeme = memes[Math.floor(Math.random() * memes.length)];
+                
+                const emojiElement = document.createElement('div');
+                emojiElement.textContent = randomMeme;
+                emojiElement.style.fontSize = '150px';
+                emojiElement.style.animation = 'memePop 0.5s ease-out forwards';
+                
+                memeOverlay.innerHTML = '';
+                memeOverlay.appendChild(emojiElement);
+                
+                setTimeout(() => {
+                    if (memeOverlay.contains(emojiElement)) {
+                        memeOverlay.removeChild(emojiElement);
+                    }
+                }, 500);
+            }
+
+            // Спавн шариков
+            function spawnBalloon() {
+                if (!gameActive) return;
+                if (balloons.length < 12) {
+                    balloons.push(new Balloon());
+                }
+            }
+
+            // Обработка клика/тапа
+            function handleClick(e) {
+                if (!gameActive) return;
+                
+                initAudio();
+                
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = W / rect.width;
+                const scaleY = H / rect.height;
+                const mouseX = (e.clientX - rect.left) * scaleX;
+                const mouseY = (e.clientY - rect.top) * scaleY;
+
+                for (let i = balloons.length - 1; i >= 0; i--) {
+                    if (!balloons[i]) {
+                        balloons.splice(i, 1);
+                        continue;
+                    }
+                    
+                    if (balloons[i].contains(mouseX, mouseY)) {
+                        const b = balloons[i];
+                        
+                        // Создаём частицы цвета шарика
+                        for (let p = 0; p < 15; p++) {
+                            particles.push(new Particle(b.x, b.y, b.color));
+                        }
+                        
+                        balloons.splice(i, 1);
+                        score++;
+                        scoreSpan.textContent = score;
+
+                        // Звук лопания
+                        playPopSound();
+
+                        // Показываем мем!
+                        showMemePopup();
+
+                        if (score % 5 === 0) {
+                            messageDiv.style.display = 'block';
+                            playComboSound();
+                            setTimeout(() => { messageDiv.style.display = 'none'; }, 700);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Игровой цикл
+            function gameLoop() {
+                if (!gameActive) {
+                    drawScene();
+                    requestAnimationFrame(gameLoop);
+                    return;
+                }
+
+                for (let i = balloons.length - 1; i >= 0; i--) {
+                    if (balloons[i]) {
+                        balloons[i].update();
+                        if (balloons[i].y + balloons[i].radius < -50) {
+                            balloons.splice(i, 1);
+                        }
+                    } else {
+                        balloons.splice(i, 1);
+                    }
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    if (particles[i]) {
+                        particles[i].update();
+                        if (particles[i].life <= 0) {
+                            particles.splice(i, 1);
+                        }
+                    } else {
+                        particles.splice(i, 1);
+                    }
+                }
+
+                drawScene();
+                requestAnimationFrame(gameLoop);
+            }
+
+            function drawScene() {
+                ctx.clearRect(0, 0, W, H);
+
+                // Фон с облаками
+                ctx.fillStyle = 'rgba(255,255,255,0.15)';
+                ctx.beginPath();
+                ctx.arc(50, 80, 40, 0, Math.PI*2);
+                ctx.arc(90, 70, 50, 0, Math.PI*2);
+                ctx.arc(130, 85, 35, 0, Math.PI*2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(300, 140, 45, 0, Math.PI*2);
+                ctx.arc(340, 120, 55, 0, Math.PI*2);
+                ctx.fill();
+
+                balloons.forEach(b => {
+                    if (b) b.draw(ctx);
+                });
+                particles.forEach(p => p.draw(ctx));
+
+                if (!gameActive && timeLeft <= 0) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                    ctx.fillRect(0, 0, W, H);
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 32px "Comic Sans MS", "Arial"';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('ИГРА ОКОНЧЕНА', W/2, H/2 - 20);
+                    ctx.font = '24px "Comic Sans MS", "Arial"';
+                    ctx.fillText('Счёт: ' + score, W/2, H/2 + 30);
+                }
+            }
+
+            function startTimer() {
+                gameInterval = setInterval(() => {
+                    timeLeft--;
+                    timerSpan.textContent = timeLeft;
+                    if (timeLeft <= 0) {
+                        endGame();
+                    }
+                }, 1000);
+            }
+
+            function endGame() {
+                gameActive = false;
+                clearInterval(gameInterval);
+                clearInterval(spawnInterval);
+                restartBtn.style.display = 'block';
+                timerSpan.textContent = '0';
+            }
+
+            function resetGame() {
+                initAudio();
+                
+                balloons = [];
+                particles = [];
+                score = 0;
+                timeLeft = 30;
+                scoreSpan.textContent = '0';
+                timerSpan.textContent = '30';
+                messageDiv.style.display = 'none';
+                restartBtn.style.display = 'none';
+                memeOverlay.innerHTML = '';
+                gameActive = true;
+
+                if (gameInterval) clearInterval(gameInterval);
+                if (spawnInterval) clearInterval(spawnInterval);
+
+                startTimer();
+                spawnInterval = setInterval(spawnBalloon, 900);
+                
+                // Стартовые шарики
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => { 
+                        if (gameActive) {
+                            const b = new Balloon();
+                            b.y = H - 100 - i * 120;
+                            balloons.push(b);
+                        }
+                    }, i * 200);
+                }
+            }
+
+            // Привязка событий
+            canvas.addEventListener('click', handleClick);
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY };
+                handleClick(fakeEvent);
+            }, { passive: false });
+
+            restartBtn.addEventListener('click', resetGame);
+
+            window.addEventListener('load', () => {
+                setTimeout(resetGame, 500);
+                gameLoop();
+            });
+        })();
+    </script>
+</body>
+</html>
