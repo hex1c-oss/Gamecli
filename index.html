@@ -1,905 +1,121 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>МемоБум 2026 — Золотая Лихорадка!</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
-            font-family: 'Comic Sans MS', 'Arial', sans-serif;
-            touch-action: manipulation;
-        }
-        #gameContainer {
-            position: relative;
-            width: 400px;
-            height: 700px;
-            background: radial-gradient(circle at 20% 20%, #2d3436, #000000);
-            border-radius: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-            overflow: hidden;
-            cursor: pointer;
-            transition: background 1s ease;
-        }
-        #gameContainer.rich {
-            background: radial-gradient(circle at 20% 20%, #ffd700, #ff8c00);
-        }
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-        /* UI элементы */
-        #ui {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            pointer-events: none;
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            text-shadow: 2px 2px 0 #00000080;
-            z-index: 5;
-        }
-        .stat-box {
-            background: rgba(0,0,0,0.6);
-            padding: 8px 15px;
-            border-radius: 20px;
-            backdrop-filter: blur(5px);
-        }
-        #scoreDisplay { color: #ffd700; }
-        #timerDisplay { color: #ff6b6b; }
-        #levelDisplay { color: #4ecdc4; }
-        
-        /* Миссии */
-        #missionsPanel {
-            position: absolute;
-            top: 60px;
-            left: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.7);
-            border-radius: 15px;
-            padding: 10px;
-            pointer-events: none;
-            z-index: 4;
-            max-height: 120px;
-            overflow-y: auto;
-        }
-        .mission-item {
-            display: flex;
-            align-items: center;
-            margin: 5px 0;
-            padding: 5px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            font-size: 14px;
-            color: white;
-        }
-        .mission-item.completed {
-            background: rgba(76, 209, 196, 0.3);
-            text-decoration: line-through;
-            opacity: 0.7;
-        }
-        .mission-icon {
-            font-size: 20px;
-            margin-right: 8px;
-        }
-        .mission-progress {
-            margin-left: auto;
-            font-weight: bold;
-        }
-
-        /* Сообщения */
-        #message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            font-size: 32px;
-            color: gold;
-            font-weight: bold;
-            text-shadow: 3px 3px 0 #000;
-            pointer-events: none;
-            display: none;
-            z-index: 15;
-            animation: popIn 0.5s ease-out;
-        }
-        @keyframes popIn {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
-        }
-
-        /* Главное меню */
-        #mainMenu {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 20;
-            padding: 20px;
-        }
-        #mainMenu h1 {
-            color: #ffd700;
-            font-size: 36px;
-            margin-bottom: 10px;
-            text-align: center;
-            text-shadow: 3px 3px 0 #ff8c00;
-            animation: glow 2s ease-in-out infinite;
-        }
-        @keyframes glow {
-            0%, 100% { text-shadow: 3px 3px 0 #ff8c00; }
-            50% { text-shadow: 3px 3px 0 #fff, 0 0 20px #ffd700; }
-        }
-        .menu-btn {
-            background: linear-gradient(45deg, #ffd700, #ff8c00);
-            border: none;
-            color: #000;
-            padding: 15px 40px;
-            font-size: 22px;
-            font-weight: bold;
-            border-radius: 50px;
-            margin: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 6px 0 #b8860b;
-            font-family: 'Comic Sans MS', 'Arial', sans-serif;
-        }
-        .menu-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 9px 0 #b8860b;
-        }
-        .menu-btn:active {
-            transform: translateY(3px);
-            box-shadow: 0 3px 0 #b8860b;
-        }
-        .menu-btn.secondary {
-            background: linear-gradient(45deg, #4ecdc4, #44a08d);
-            box-shadow: 0 6px 0 #2d7a6e;
-        }
-        .menu-btn.secondary:hover {
-            box-shadow: 0 9px 0 #2d7a6e;
-        }
-
-        /* Как играть */
-        #howToPlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 25;
-            padding: 20px;
-            color: white;
-            overflow-y: auto;
-        }
-        #howToPlay h2 {
-            color: #ffd700;
-            margin-bottom: 20px;
-        }
-        #howToPlay ul {
-            text-align: left;
-            line-height: 1.8;
-            font-size: 16px;
-        }
-        #howToPlay li {
-            margin: 10px 0;
-        }
-
-        /* Золотая лихорадка */
-        .goldRush {
-            animation: goldShake 0.5s ease-in-out infinite;
-        }
-        @keyframes goldShake {
-            0%, 100% { transform: rotate(-2deg); }
-            50% { transform: rotate(2deg); }
-        }
-
-        /* Прогресс бар уровня */
-        #levelProgress {
-            position: absolute;
-            bottom: 100px;
-            left: 20px;
-            right: 20px;
-            height: 10px;
-            background: rgba(0,0,0,0.5);
-            border-radius: 5px;
-            overflow: hidden;
-            z-index: 4;
-        }
-        #levelBar {
-            height: 100%;
-            background: linear-gradient(90deg, #ffd700, #ff8c00);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>МемоБум 2026 - Учимся Играя!</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:linear-gradient(135deg,#667eea,#764ba2);display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:hidden;font-family:'Comic Sans MS',Arial,sans-serif;touch-action:manipulation}
+#gameContainer{position:relative;width:400px;height:700px;background:linear-gradient(180deg,#87CEEB,#E0F6FF);border-radius:30px;box-shadow:0 20px 40px rgba(0,0,0,0.3);overflow:hidden;cursor:pointer;transition:background 1s ease}
+#gameContainer.rich{background:linear-gradient(180deg,#FFD700,#FFA500,#FFD700)}
+canvas{display:block;width:100%;height:100%}
+#ui{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;color:white;font-size:20px;font-weight:bold;text-shadow:2px 2px 0 #0008;z-index:5}
+.stat-box{background:rgba(255,255,255,0.9);padding:8px 15px;border-radius:20px;color:#333;box-shadow:0 4px 0 rgba(0,0,0,0.2)}
+#mainMenu{position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#FFB6C1,#FF69B4);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:20;padding:20px}
+#mainMenu h1{color:white;font-size:32px;margin-bottom:10px;text-align:center;text-shadow:3px 3px 0 #FF1493;animation:bounce 1s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.menu-btn{background:linear-gradient(45deg,#FFD700,#FFA500);border:none;color:#333;padding:15px 40px;font-size:20px;font-weight:bold;border-radius:50px;margin:10px;cursor:pointer;transition:all 0.3s;box-shadow:0 6px 0 #B8860B;font-family:'Comic Sans MS',Arial,sans-serif}
+.menu-btn:hover{transform:scale(1.05);box-shadow:0 8px 0 #B8860B}
+.menu-btn:active{transform:scale(0.98);box-shadow:0 3px 0 #B8860B}
+.menu-btn.secondary{background:linear-gradient(45deg,#98FB98,#32CD32);box-shadow:0 6px 0 #228B22}
+.menu-btn.secondary:hover{box-shadow:0 8px 0 #228B22}
+#missionSelect{position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#87CEEB,#4682B4);display:none;flex-direction:column;justify-content:center;align-items:center;z-index:25;padding:20px;overflow-y:auto}
+#missionSelect h2{color:white;font-size:26px;margin-bottom:20px;text-align:center}
+.mission-card{background:white;border-radius:20px;padding:15px 25px;margin:8px;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 0 #ccc;display:flex;align-items:center;width:100%;max-width:320px}
+.mission-card:hover{transform:scale(1.05);box-shadow:0 6px 0 #aaa}
+.mission-card.selected{background:#FFD700;box-shadow:0 4px 0 #B8860B}
+.mission-icon{font-size:36px;margin-right:15px}
+.mission-name{font-size:18px;font-weight:bold;color:#333}
+#howToPlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:none;flex-direction:column;justify-content:center;align-items:center;z-index:30;padding:20px;color:white;overflow-y:auto}
+#howToPlay h2{color:#FFD700;margin-bottom:20px}
+#howToPlay ul{text-align:left;line-height:2;font-size:16px}
+#howToPlay li{margin:10px 0}
+#message{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;font-size:28px;color:#FFD700;font-weight:bold;text-shadow:3px 3px 0 #000;pointer-events:none;display:none;z-index:15;animation:popIn 0.5s ease-out}
+@keyframes popIn{0%{transform:translate(-50%,-50%) scale(0.5);opacity:0}50%{transform:translate(-50%,-50%) scale(1.2);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+#levelProgress{position:absolute;bottom:80px;left:20px;right:20px;height:15px;background:rgba(255,255,255,0.5);border-radius:10px;overflow:hidden;z-index:4;border:2px solid white}
+#levelBar{height:100%;background:linear-gradient(90deg,#FF69B4,#FFD700,#32CD32);width:0%;transition:width 0.3s}
+.back-btn{background:linear-gradient(45deg,#FF6B6B,#EE5A5A);box-shadow:0 6px 0 #C44545}
+</style>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="400" height="700"></canvas>
-        
-        <div id="ui">
-            <div class="stat-box">💰 <span id="scoreDisplay">0</span></div>
-            <div class="stat-box">⏱️ <span id="timerDisplay">60</span></div>
-            <div class="stat-box">🎯 <span id="levelDisplay">1</span></div>
-        </div>
-
-        <div id="missionsPanel">
-            <div style="color: #ffd700; font-weight: bold; margin-bottom: 5px;">📋 МИССИИ:</div>
-            <div id="missionsList"></div>
-        </div>
-
-        <div id="levelProgress">
-            <div id="levelBar"></div>
-        </div>
-
-        <div id="message"></div>
-
-        <!-- Главное меню -->
-        <div id="mainMenu">
-            <h1>🎈 МЕМОБУМ 2026 🎈</h1>
-            <p style="color: white; margin-bottom: 20px; text-align: center;">Золотая Лихорадка Квадроберов!</p>
-            <button class="menu-btn" id="startBtn">▶️ НАЧАТЬ ИГРУ</button>
-            <button class="menu-btn secondary" id="howToBtn">❓ КАК ИГРАТЬ</button>
-        </div>
-
-        <!-- Как играть -->
-        <div id="howToPlay">
-            <h2>📖 КАК ИГРАТЬ</h2>
-            <ul>
-                <li>🎯 <strong>Ломай шарики</strong> — кликай или тапай по ним</li>
-                <li>💰 <strong>Набирай очки</strong> — каждый шарик = 1 очко</li>
-                <li>🔥 <strong>Выполняй миссии</strong> — следи за панелью слева</li>
-                <li>⭐ <strong>Золотая лихорадка</strong> — при 50+ очках включается режим x2!</li>
-                <li>🎨 <strong>Смена фона</strong> — при 25 очках станешь богатым квадробером!</li>
-                <li>⚡ <strong>Ускорение</strong> — каждые 10 очков игра ускоряется</li>
-                <li>🎪 <strong>3D Мемасики</strong> — лови редкие появляющиеся мемы!</li>
-            </ul>
-            <button class="menu-btn" id="backBtn">↩️ НАЗАД</button>
-        </div>
-    </div>
-
-    <script>
-        (function() {
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
-            const gameContainer = document.getElementById('gameContainer');
-
-            // UI элементы
-            const scoreSpan = document.getElementById('scoreDisplay');
-            const timerSpan = document.getElementById('timerDisplay');
-            const levelSpan = document.getElementById('levelDisplay');
-            const messageDiv = document.getElementById('message');
-            const missionsList = document.getElementById('missionsList');
-            const levelBar = document.getElementById('levelBar');
-
-            // Меню
-            const mainMenu = document.getElementById('mainMenu');
-            const howToPlay = document.getElementById('howToPlay');
-            const startBtn = document.getElementById('startBtn');
-            const howToBtn = document.getElementById('howToBtn');
-            const backBtn = document.getElementById('backBtn');
-
-            // Размеры
-            const W = 400, H = 700;
-
-            // Игровые переменные
-            let balloons = [];
-            let particles = [];
-            let memes3d = [];
-            let score = 0;
-            let timeLeft = 60;
-            let gameActive = false;
-            let gameInterval = null;
-            let spawnInterval = null;
-            let level = 1;
-            let goldRushActive = false;
-            let goldRushTimer = null;
-
-            // Миссии (детские тренды 2026)
-            const missionTemplates = [
-                { icon: '🤖', text: 'Лопни роботов', target: 5, type: 'robots', current: 0 },
-                { icon: '🦄', text: 'Поймай единорогов', target: 3, type: 'unicorns', current: 0 },
-                { icon: '🚀', text: 'Запусти ракеты', target: 4, type: 'rockets', current: 0 },
-                { icon: '🌈', text: 'Собери радугу', target: 6, type: 'rainbows', current: 0 },
-                { icon: '👾', text: 'Победи пришельцев', target: 3, type: 'aliens', current: 0 },
-                { icon: '🍕', text: 'Съешь пиццу', target: 5, type: 'pizza', current: 0 },
-                { icon: '🎮', text: 'Пройди уровень', target: 1, type: 'level', current: 0 },
-                { icon: '💎', text: 'Найди кристаллы', target: 4, type: 'diamonds', current: 0 }
-            ];
-            let activeMissions = [];
-
-            // Типы шариков с эмодзи
-            const balloonTypes = [
-                { emoji: '🤖', color: '#C0C0C0', name: 'robots' },
-                { emoji: '🦄', color: '#FFC0CB', name: 'unicorns' },
-                { emoji: '🚀', color: '#FF4500', name: 'rockets' },
-                { emoji: '🌈', color: '#rainbow', name: 'rainbows' },
-                { emoji: '👾', color: '#9370DB', name: 'aliens' },
-                { emoji: '🍕', color: '#FFD700', name: 'pizza' },
-                { emoji: '💎', color: '#00FFFF', name: 'diamonds' },
-                { emoji: '🎈', color: '#FF6B6B', name: 'normal' }
-            ];
-
-            // 3D Мемасики 2026
-            const memeTemplates = [
-                '😎', '🤑', '🥶', '🤠', '👽', '🤖', '🦄', '🌈', '💎', '🚀'
-            ];
-
-            // Аудио контекст
-            let audioCtx = null;
-
-            function initAudio() {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-            }
-
-            function playSound(frequency, duration, type = 'sine') {
-                if (!audioCtx) return;
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                oscillator.frequency.value = frequency;
-                oscillator.type = type;
-                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-                oscillator.start(audioCtx.currentTime);
-                oscillator.stop(audioCtx.currentTime + duration);
-            }
-
-            function playPopSound() {
-                playSound(400 + Math.random() * 200, 0.1, 'triangle');
-            }
-
-            function playComboSound() {
-                playSound(600, 0.1, 'sine');
-                setTimeout(() => playSound(800, 0.1, 'sine'), 100);
-                setTimeout(() => playSound(1000, 0.15, 'sine'), 200);
-            }
-
-            function playGoldRushSound() {
-                for (let i = 0; i < 5; i++) {
-                    setTimeout(() => playSound(500 + i * 100, 0.1, 'square'), i * 80);
-                }
-            }
-
-            // Класс шарика
-            class Balloon {
-                constructor(type = null) {
-                    this.type = type || balloonTypes[Math.floor(Math.random() * balloonTypes.length)];
-                    this.emoji = this.type.emoji;
-                    this.radius = 30 + Math.random() * 20;
-                    this.x = Math.random() * (W - this.radius * 2) + this.radius;
-                    this.y = H + this.radius;
-                    
-                    // Скорость зависит от уровня
-                    const speedMultiplier = 1 + (level - 1) * 0.3;
-                    this.speedY = (-2 - Math.random() * 2) * speedMultiplier;
-                    this.speedX = (Math.random() - 0.5) * 2 * speedMultiplier;
-                    this.wobble = Math.random() * Math.PI * 2;
-                    this.wobbleSpeed = 0.02 + Math.random() * 0.02;
-                    
-                    // 3D эффект
-                    this.rotationY = 0;
-                    this.scaleZ = 1;
-                    
-                    this.hitboxScale = 0.8;
-                }
-
-                update() {
-                    this.y += this.speedY;
-                    this.x += Math.sin(this.wobble) * this.speedX;
-                    this.wobble += this.wobbleSpeed;
-                    this.rotationY += 0.05;
-                    
-                    // Отскок от стен
-                    if (this.x - this.radius < 0) { 
-                        this.x = this.radius; 
-                        this.speedX *= -0.8; 
-                    }
-                    if (this.x + this.radius > W) { 
-                        this.x = W - this.radius; 
-                        this.speedX *= -0.8; 
-                    }
-                }
-
-                draw(ctx) {
-                    ctx.save();
-                    ctx.translate(this.x, this.y);
-                    
-                    // 3D вращение
-                    const scale = Math.abs(Math.cos(this.rotationY));
-                    ctx.scale(scale, 1);
-                    
-                    // Тень
-                    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-                    ctx.shadowBlur = 10;
-                    ctx.shadowOffsetY = 5;
-                    
-                    // Градиентный шарик
-                    const gradient = ctx.createRadialGradient(-this.radius*0.3, -this.radius*0.3, 0, 0, 0, this.radius);
-                    if (this.type.color === '#rainbow') {
-                        const hue = (Date.now() / 20) % 360;
-                        gradient.addColorStop(0, `hsl(${hue}, 100%, 70%)`);
-                        gradient.addColorStop(1, `hsl(${(hue + 60) % 360}, 100%, 50%)`);
-                    } else {
-                        gradient.addColorStop(0, '#ffffff');
-                        gradient.addColorStop(0.3, this.type.color);
-                        gradient.addColorStop(1, '#000000');
-                    }
-                    
-                    ctx.fillStyle = gradient;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Блик
-                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-                    ctx.beginPath();
-                    ctx.arc(-this.radius*0.3, -this.radius*0.3, this.radius*0.2, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Эмодзи
-                    ctx.shadowColor = 'transparent';
-                    ctx.font = `${this.radius}px Arial`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(this.emoji, 0, 2);
-                    
-                    ctx.restore();
-                }
-
-                contains(mx, my) {
-                    const dx = mx - this.x;
-                    const dy = my - this.y;
-                    const effectiveRadius = this.radius * this.hitboxScale;
-                    return (dx * dx + dy * dy) < (effectiveRadius * effectiveRadius);
-                }
-            }
-
-            // 3D Мемасик
-            class Meme3D {
-                constructor() {
-                    this.emoji = memeTemplates[Math.floor(Math.random() * memeTemplates.length)];
-                    this.x = Math.random() * (W - 60) + 30;
-                    this.y = H + 50;
-                    this.speedY = -3 - Math.random() * 2;
-                    this.size = 40 + Math.random() * 20;
-                    this.rotationY = 0;
-                    this.rotationX = 0;
-                    this.life = 1.0;
-                    this.decay = 0.005;
-                    this.worth = 5; // Бонусные очки
-                }
-
-                update() {
-                    this.y += this.speedY;
-                    this.rotationY += 0.1;
-                    this.rotationX += 0.05;
-                    this.life -= this.decay;
-                }
-
-                draw(ctx) {
-                    if (this.life <= 0) return;
-                    
-                    ctx.save();
-                    ctx.translate(this.x, this.y);
-                    ctx.globalAlpha = this.life;
-                    
-                    // 3D трансформация
-                    const scaleX = Math.abs(Math.cos(this.rotationY));
-                    const scaleY = Math.abs(Math.cos(this.rotationX));
-                    ctx.scale(scaleX, scaleY);
-                    
-                    // Свечение
-                    ctx.shadowColor = '#ffd700';
-                    ctx.shadowBlur = 20;
-                    
-                    ctx.font = `${this.size}px Arial`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(this.emoji, 0, 0);
-                    
-                    ctx.restore();
-                }
-
-                contains(mx, my) {
-                    const dx = mx - this.x;
-                    const dy = my - this.y;
-                    return (dx * dx + dy * dy) < (this.size * this.size);
-                }
-            }
-
-            // Частицы
-            class Particle {
-                constructor(x, y, color) {
-                    this.x = x;
-                    this.y = y;
-                    this.vx = (Math.random() - 0.5) * 8;
-                    this.vy = (Math.random() - 0.5) * 8 - 2;
-                    this.life = 1.0;
-                    this.decay = 0.02 + Math.random() * 0.03;
-                    this.size = 3 + Math.random() * 5;
-                    this.color = color || '#FFD700';
-                }
-
-                update() {
-                    this.x += this.vx;
-                    this.y += this.vy;
-                    this.vy += 0.15;
-                    this.life -= this.decay;
-                }
-
-                draw(ctx) {
-                    if (this.life <= 0) return;
-                    ctx.globalAlpha = this.life;
-                    ctx.fillStyle = this.color;
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.globalAlpha = 1.0;
-                }
-            }
-
-            // Показать сообщение
-            function showMessage(text, duration = 1500) {
-                messageDiv.textContent = text;
-                messageDiv.style.display = 'block';
-                setTimeout(() => {
-                    messageDiv.style.display = 'none';
-                }, duration);
-            }
-
-            // Обновить миссии
-            function updateMissions(type) {
-                activeMissions.forEach(mission => {
-                    if (mission.type === type && !mission.completed) {
-                        mission.current++;
-                        if (mission.current >= mission.target) {
-                            mission.completed = true;
-                            mission.current = mission.target;
-                            score += 10; // Бонус за выполнение миссии
-                            playComboSound();
-                            showMessage(`✅ ${mission.icon} МИССИЯ ВЫПОЛНЕНА! +10`, 2000);
-                        }
-                    }
-                });
-                renderMissions();
-            }
-
-            function renderMissions() {
-                missionsList.innerHTML = '';
-                activeMissions.forEach(mission => {
-                    const div = document.createElement('div');
-                    div.className = 'mission-item' + (mission.completed ? ' completed' : '');
-                    div.innerHTML = `
-                        <span class="mission-icon">${mission.icon}</span>
-                        <span>${mission.text}</span>
-                        <span class="mission-progress">${mission.current}/${mission.target}</span>
-                    `;
-                    missionsList.appendChild(div);
-                });
-            }
-
-            function generateMissions() {
-                activeMissions = [];
-                const count = 2 + Math.floor(level / 2);
-                for (let i = 0; i < count; i++) {
-                    const template = missionTemplates[Math.floor(Math.random() * missionTemplates.length)];
-                    activeMissions.push({
-                        ...template,
-                        current: 0,
-                        completed: false,
-                        target: Math.max(2, template.target - Math.floor(level / 3))
-                    });
-                }
-                renderMissions();
-            }
-
-            // Золотая лихорадка
-            function activateGoldRush() {
-                if (goldRushActive) return;
-                goldRushActive = true;
-                gameContainer.classList.add('goldRush');
-                showMessage('🔥 ЗОЛОТАЯ ЛИХОРАДКА! x2 ОЧКИ! 🔥', 3000);
-                playGoldRushSound();
-                
-                // Удвоение скорости спавна
-                clearInterval(spawnInterval);
-                spawnInterval = setInterval(spawnBalloon, 400);
-                
-                // Автоматическое выключение через 10 секунд
-                if (goldRushTimer) clearTimeout(goldRushTimer);
-                goldRushTimer = setTimeout(() => {
-                    goldRushActive = false;
-                    gameContainer.classList.remove('goldRush');
-                    clearInterval(spawnInterval);
-                    spawnInterval = setInterval(spawnBalloon, Math.max(300, 900 - level * 50));
-                }, 10000);
-            }
-
-            // Спавн шариков
-            function spawnBalloon() {
-                if (!gameActive) return;
-                if (balloons.length < 15 + level * 2) {
-                    balloons.push(new Balloon());
-                }
-                
-                // Шанс спавна 3D мемасика (5%)
-                if (Math.random() < 0.05 && memes3d.length < 3) {
-                    memes3d.push(new Meme3D());
-                }
-            }
-
-            // Обработка клика
-            function handleClick(e) {
-                if (!gameActive) return;
-                e.preventDefault();
-                
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = W / rect.width;
-                const scaleY = H / rect.height;
-                const mouseX = (e.clientX || (e.touches && e.touches[0].clientX) - rect.left) * scaleX;
-                const mouseY = (e.clientY || (e.touches && e.touches[0].clientY) - rect.top) * scaleY;
-
-                // Проверка 3D мемасиков (приоритет)
-                for (let i = memes3d.length - 1; i >= 0; i--) {
-                    if (memes3d[i] && memes3d[i].contains(mouseX, mouseY)) {
-                        const meme = memes3d[i];
-                        for (let p = 0; p < 20; p++) {
-                            particles.push(new Particle(meme.x, meme.y, '#ffd700'));
-                        }
-                        memes3d.splice(i, 1);
-                        score += meme.worth * (goldRushActive ? 2 : 1);
-                        scoreSpan.textContent = score;
-                        playComboSound();
-                        showMessage(`🌟 3D МЕМ! +${meme.worth}`);
-                        checkProgress();
-                        return;
-                    }
-                }
-
-                // Проверка шариков
-                for (let i = balloons.length - 1; i >= 0; i--) {
-                    if (balloons[i] && balloons[i].contains(mouseX, mouseY)) {
-                        const b = balloons[i];
-                        
-                        // Частицы
-                        for (let p = 0; p < 15; p++) {
-                            particles.push(new Particle(b.x, b.y, b.type.color));
-                        }
-                        
-                        balloons.splice(i, 1);
-                        const points = goldRushActive ? 2 : 1;
-                        score += points;
-                        scoreSpan.textContent = score;
-                        
-                        playPopSound();
-                        
-                        // Обновление миссий
-                        updateMissions(b.type.name);
-                        
-                        // Проверка прогресса
-                        checkProgress();
-                        break;
-                    }
-                }
-            }
-
-            // Проверка прогресса и событий
-            function checkProgress() {
-                // Смена фона при 25 очках
-                if (score >= 25 && !gameContainer.classList.contains('rich')) {
-                    gameContainer.classList.add('rich');
-                    showMessage('💰 КВАДРОБЕР СТАЛ БОГАТЫМ! 💰');
-                    playComboSound();
-                }
-                
-                // Золотая лихорадка при 50 очках
-                if (score >= 50) {
-                    activateGoldRush();
-                }
-                
-                // Увеличение уровня каждые 20 очков
-                const newLevel = 1 + Math.floor(score / 20);
-                if (newLevel > level) {
-                    level = newLevel;
-                    levelSpan.textContent = level;
-                    showMessage(`🎯 УРОВЕНЬ ${level}!`);
-                    playComboSound();
-                    generateMissions();
-                    
-                    // Ускорение игры
-                    clearInterval(spawnInterval);
-                    spawnInterval = setInterval(spawnBalloon, Math.max(300, 900 - level * 80));
-                }
-                
-                // Обновление прогресс бара
-                const progress = Math.min(100, (score % 20) / 20 * 100);
-                levelBar.style.width = progress + '%';
-            }
-
-            // Игровой цикл
-            function gameLoop() {
-                ctx.clearRect(0, 0, W, H);
-
-                // Фон с блёстками если богатый
-                if (gameContainer.classList.contains('rich')) {
-                    for (let i = 0; i < 20; i++) {
-                        const x = (Date.now() / 20 + i * 50) % W;
-                        const y = (Date.now() / 30 + i * 70) % H;
-                        ctx.fillStyle = `rgba(255, 215, 0, ${0.3 + Math.sin(Date.now() / 200 + i) * 0.2})`;
-                        ctx.beginPath();
-                        ctx.arc(x, y, 2 + Math.random() * 3, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-
-                // Обновление и отрисовка шариков
-                for (let i = balloons.length - 1; i >= 0; i--) {
-                    if (balloons[i]) {
-                        balloons[i].update();
-                        balloons[i].draw(ctx);
-                        if (balloons[i].y + balloons[i].radius < -50) {
-                            balloons.splice(i, 1);
-                        }
-                    } else {
-                        balloons.splice(i, 1);
-                    }
-                }
-
-                // Обновление и отрисовка 3D мемасиков
-                for (let i = memes3d.length - 1; i >= 0; i--) {
-                    if (memes3d[i]) {
-                        memes3d[i].update();
-                        memes3d[i].draw(ctx);
-                        if (memes3d[i].y + 50 < -50 || memes3d[i].life <= 0) {
-                            memes3d.splice(i, 1);
-                        }
-                    } else {
-                        memes3d.splice(i, 1);
-                    }
-                }
-
-                // Частицы
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    if (particles[i]) {
-                        particles[i].update();
-                        particles[i].draw(ctx);
-                        if (particles[i].life <= 0) {
-                            particles.splice(i, 1);
-                        }
-                    } else {
-                        particles.splice(i, 1);
-                    }
-                }
-
-                // Экран проигрыша
-                if (!gameActive && timeLeft <= 0) {
-                    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-                    ctx.fillRect(0, 0, W, H);
-                    ctx.fillStyle = 'white';
-                    ctx.font = 'bold 36px "Comic Sans MS", "Arial"';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('ИГРА ОКОНЧЕНА', W/2, H/2 - 40);
-                    ctx.font = '28px "Comic Sans MS", "Arial"';
-                    ctx.fillText(`Счёт: ${score}`, W/2, H/2 + 10);
-                    ctx.font = '22px "Comic Sans MS", "Arial"';
-                    ctx.fillText(`Уровень: ${level}`, W/2, H/2 + 50);
-                }
-
-                requestAnimationFrame(gameLoop);
-            }
-
-            // Таймер
-            function startTimer() {
-                gameInterval = setInterval(() => {
-                    timeLeft--;
-                    timerSpan.textContent = timeLeft;
-                    if (timeLeft <= 0) {
-                        endGame();
-                    }
-                }, 1000);
-            }
-
-            function endGame() {
-                gameActive = false;
-                clearInterval(gameInterval);
-                clearInterval(spawnInterval);
-                if (goldRushTimer) clearTimeout(goldRushTimer);
-                timerSpan.textContent = '0';
-            }
-
-            function resetGame() {
-                balloons = [];
-                particles = [];
-                memes3d = [];
-                score = 0;
-                timeLeft = 60;
-                level = 1;
-                goldRushActive = false;
-                
-                scoreSpan.textContent = '0';
-                timerSpan.textContent = '60';
-                levelSpan.textContent = '1';
-                levelBar.style.width = '0%';
-                
-                gameContainer.classList.remove('rich');
-                gameContainer.classList.remove('goldRush');
-                
-                if (goldRushTimer) clearTimeout(goldRushTimer);
-                if (gameInterval) clearInterval(gameInterval);
-                if (spawnInterval) clearInterval(spawnInterval);
-                
-                gameActive = true;
-                generateMissions();
-                startTimer();
-                spawnInterval = setInterval(spawnBalloon, 900);
-                
-                // Начальные шарики
-                for (let i = 0; i < 5; i++) {
-                    setTimeout(() => { if (gameActive) spawnBalloon(); }, i * 200);
-                }
-            }
-
-            // Привязка событий
-            canvas.addEventListener('click', handleClick);
-            canvas.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY };
-                handleClick(fakeEvent);
-            }, { passive: false });
-
-            // Меню кнопки
-            startBtn.addEventListener('click', () => {
-                initAudio();
-                mainMenu.style.display = 'none';
-                resetGame();
-            });
-
-            howToBtn.addEventListener('click', () => {
-                howToPlay.style.display = 'flex';
-            });
-
-            backBtn.addEventListener('click', () => {
-                howToPlay.style.display = 'none';
-            });
-
-            // Старт
-            window.addEventListener('load', () => {
-                gameLoop();
-            });
-        })();
-    </script>
+<div id="gameContainer">
+<canvas id="gameCanvas" width="400" height="700"></canvas>
+<div id="ui">
+<div class="stat-box">⭐ <span id="scoreDisplay">0</span></div>
+<div class="stat-box">🎯 <span id="missionName">Азбука</span></div>
+</div>
+<div id="levelProgress"><div id="levelBar"></div></div>
+<div id="message"></div>
+<div id="mainMenu">
+<h1>🎈 МЕМОБУМ 2026 🎈</h1>
+<p style="color:white;margin-bottom:20px;font-size:18px">Учимся Играя!</p>
+<button class="menu-btn" id="startBtn">▶️ ИГРАТЬ</button>
+<button class="menu-btn secondary" id="howToBtn">❓ КАК ИГРАТЬ</button>
+</div>
+<div id="missionSelect">
+<h2>🎯 ВЫБЕРИ МИССИЮ:</h2>
+<div class="mission-card" data-mission="alphabet"><span class="mission-icon">🔤</span><span class="mission-name">Азбука — учим буквы</span></div>
+<div class="mission-card" data-mission="numbers"><span class="mission-icon">🔢</span><span class="mission-name">Цифры — учим счёт</span></div>
+<div class="mission-card" data-mission="animals"><span class="mission-icon">🐾</span><span class="mission-name">Животные — звуки зверей</span></div>
+<div class="mission-card" data-mission="colors"><span class="mission-icon">🎨</span><span class="mission-name">Раскраска — учим цвета</span></div>
+<div class="mission-card" data-mission="robots"><span class="mission-icon">🤖</span><span class="mission-name">Роботы — космос</span></div>
+<div class="mission-card" data-mission="unicorns"><span class="mission-icon">🦄</span><span class="mission-name">Единороги — волшебство</span></div>
+<button class="menu-btn back-btn" id="backToMenuBtn">↩️ НАЗАД</button>
+</div>
+<div id="howToPlay">
+<h2>📖 КАК ИГРАТЬ</h2>
+<ul>
+<li>🎯 Ломай шарики — кликай или тапай по ним</li>
+<li>⭐ Набирай очки — каждый шарик = 1 очко</li>
+<li>🔤 Учи буквы и цифры — выбирай миссию</li>
+<li>🐾 Слушай животных — звук при лопании</li>
+<li>💰 Стань богатым — при 25 очках фон изменится!</li>
+<li>🔥 Золотая лихорадка — при 50 очках x2!</li>
+</ul>
+<button class="menu-btn" id="backBtn">↩️ НАЗАД</button>
+</div>
+</div>
+<script>
+(function(){
+const canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d'),gameContainer=document.getElementById('gameContainer');
+const scoreSpan=document.getElementById('scoreDisplay'),missionNameSpan=document.getElementById('missionName'),messageDiv=document.getElementById('message'),levelBar=document.getElementById('levelBar');
+const mainMenu=document.getElementById('mainMenu'),missionSelect=document.getElementById('missionSelect'),howToPlay=document.getElementById('howToPlay');
+const startBtn=document.getElementById('startBtn'),howToBtn=document.getElementById('howToBtn'),backBtn=document.getElementById('backBtn'),backToMenuBtn=document.getElementById('backToMenuBtn');
+const missionCards=document.querySelectorAll('.mission-card');
+const W=400,H=700;
+let balloons=[],particles=[],score=0,gameActive=false,spawnInterval=null,selectedMission='alphabet',goldRushActive=false,goldRushTimer=null,audioCtx=null;
+const missions={
+alphabet:{name:'Азбука',icon:'🔤',items:'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'.split(''),colors:['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD']},
+numbers:{name:'Цифры',icon:'🔢',items:['0','1','2','3','4','5','6','7','8','9','+','-','='],colors:['#FF69B4','#32CD32','#FFD700','#FFA500','#9370DB']},
+animals:{name:'Животные',icon:'🐾',items:['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🦆','🦅'],colors:['#FFB6C1','#98FB98','#87CEEB','#DDA0DD','#F0E68C']},
+colors:{name:'Раскраска',icon:'🎨',items:['🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🌈'],colors:['#FF0000','#FFA500','#FFFF00','#00FF00','#0000FF','#800080']},
+robots:{name:'Роботы',icon:'🤖',items:['🤖','👾','🛸','🚀','⭐','🌙','🪐','☄️','🛰️','🔧'],colors:['#C0C0C0','#708090','#4682B4','#5F9EA0','#6495ED']},
+unicorns:{name:'Единороги',icon:'🦄',items:['🦄','🧚','🧜‍♀️','🌈','✨','🌟','💫','🎀','👑','💖'],colors:['#FFC0CB','#DDA0DD','#E6E6FA','#FFB6C1','#FFF0F5']}
+};
+function initAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)()}
+function playSound(freq,dur,type){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=freq;o.type=type||'sine';g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+dur);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+dur)}
+function playPopSound(){playSound(400+Math.random()*300,0.15,'triangle')}
+function playAnimalSound(a){const s={'🐶':[300,350,300],'🐱':[500,600],'🐭':[700,800,700],'🐹':[400,450,400],'🐰':[350,400],'🦊':[450,500,450],'🐻':[200,250,200],'🐼':[300,350],'🐨':[250,300,250],'🐯':[180,220,180],'🦁':[150,200,150],'🐮':[200,250,200],'🐷':[280,320,280],'🐸':[350,400,350],'🐵':[400,450,400],'🐔':[500,550,500],'🐧':[300,350],'🐦':[600,700,600],'🦆':[350,400,350],'🦅':[550,650]};if(s[a])s[a].forEach((f,i)=>setTimeout(()=>playSound(f,0.1,'square'),i*150));else playPopSound()}
+function playComboSound(){[523,659,784,1046].forEach((f,i)=>setTimeout(()=>playSound(f,0.15,'sine'),i*100))}
+function playGoldRushSound(){[523,659,784,988,1046].forEach((f,i)=>setTimeout(()=>playSound(f,0.2,'square'),i*150))}
+class Balloon{constructor(item,color){this.item=item;this.color=color;this.radius=40+Math.random()*15;this.x=Math.random()*(W-this.radius*2)+this.radius;this.y=H+this.radius;this.speedY=-0.8-Math.random()*0.8;this.speedX=(Math.random()-0.5)*0.5;this.wobble=Math.random()*Math.PI*2;this.wobbleSpeed=0.015+Math.random()*0.01;this.hitboxScale=0.9}update(){this.y+=this.speedY;this.x+=Math.sin(this.wobble)*this.speedX;this.wobble+=this.wobbleSpeed;if(this.x-this.radius<0){this.x=this.radius;this.speedX*=-0.5}if(this.x+this.radius>W){this.x=W-this.radius;this.speedX*=-0.5}}draw(ctx){ctx.save();ctx.translate(this.x,this.y);const g=ctx.createRadialGradient(-this.radius*0.3,-this.radius*0.3,0,0,0,this.radius);g.addColorStop(0,'#fff');g.addColorStop(0.3,this.color);g.addColorStop(1,this.color);ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,this.radius,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,0.7)';ctx.beginPath();ctx.arc(-this.radius*0.3,-this.radius*0.3,this.radius*0.25,0,Math.PI*2);ctx.fill();ctx.strokeStyle=this.color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,this.radius);ctx.quadraticCurveTo(5,this.radius+15,0,this.radius+25);ctx.stroke();ctx.font=(this.radius*0.8)+'px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(this.item,0,0);ctx.restore()}contains(mx,my){const dx=mx-this.x,dy=my-this.y,r=this.radius*this.hitboxScale;return(dx*dx+dy*dy)<(r*r)}}
+class Particle{constructor(x,y,color){this.x=x;this.y=y;this.vx=(Math.random()-0.5)*6;this.vy=(Math.random()-0.5)*6-2;this.life=1;this.decay=0.025+Math.random()*0.03;this.size=4+Math.random()*6;this.color=color||'#FFD700'}update(){this.x+=this.vx;this.y+=this.vy;this.vy+=0.1;this.life-=this.decay}draw(ctx){if(this.life<=0)return;ctx.globalAlpha=this.life;ctx.fillStyle=this.color;ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}}
+function showMessage(t,d){messageDiv.textContent=t;messageDiv.style.display='block';setTimeout(()=>messageDiv.style.display='none',d||1500)}
+function activateGoldRush(){if(goldRushActive)return;goldRushActive=true;showMessage('🔥 ЗОЛОТАЯ ЛИХОРАДКА! x2 ОЧКИ! 🔥',3000);playGoldRushSound();clearInterval(spawnInterval);spawnInterval=setInterval(spawnBalloon,500);if(goldRushTimer)clearTimeout(goldRushTimer);goldRushTimer=setTimeout(()=>{goldRushActive=false;clearInterval(spawnInterval);spawnInterval=setInterval(spawnBalloon,1200)},10000)}
+function spawnBalloon(){if(!gameActive)return;if(balloons.length<12){const m=missions[selectedMission];balloons.push(new Balloon(m.items[Math.floor(Math.random()*m.items.length)],m.colors[Math.floor(Math.random()*m.colors.length)]))}}
+function handleClick(e){if(!gameActive)return;e.preventDefault();const rect=canvas.getBoundingClientRect(),scaleX=W/rect.width,scaleY=H/rect.height,cx=e.clientX||(e.touches&&e.touches[0].clientX),cy=e.clientY||(e.touches&&e.touches[0].clientY),mx=(cx-rect.left)*scaleX,my=(cy-rect.top)*scaleY;for(let i=balloons.length-1;i>=0;i--){if(balloons[i]&&balloons[i].contains(mx,my)){const b=balloons[i];for(let p=0;p<15;p++)particles.push(new Particle(b.x,b.y,b.color));balloons.splice(i,1);score+=goldRushActive?2:1;scoreSpan.textContent=score;if(selectedMission==='animals')playAnimalSound(b.item);else playPopSound();checkProgress();break}}}
+function checkProgress(){if(score>=25&&!gameContainer.classList.contains('rich')){gameContainer.classList.add('rich');showMessage('💰 МОЛОДЕЦ! СТАЛ БОГАТЫМ! 💰');playComboSound()}if(score>=50)activateGoldRush();levelBar.style.width=Math.min(100,(score%25)/25*100)+'%'}
+function gameLoop(){ctx.clearRect(0,0,W,H);ctx.fillStyle='rgba(255,255,255,0.3)';for(let i=0;i<5;i++){const x=(Date.now()/50+i*100)%(W+100)-50,y=50+i*80+Math.sin(Date.now()/1000+i)*20;ctx.beginPath();ctx.arc(x,y,30,0,Math.PI*2);ctx.arc(x+25,y-10,35,0,Math.PI*2);ctx.arc(x+50,y,30,0,Math.PI*2);ctx.fill()}if(gameContainer.classList.contains('rich')){for(let i=0;i<15;i++){const x=(Date.now()/30+i*60)%W,y=(Date.now()/40+i*80)%H;ctx.fillStyle='rgba(255,215,0,'+(0.4+Math.sin(Date.now()/200+i)*0.2)+')';ctx.beginPath();ctx.arc(x,y,3+Math.random()*3,0,Math.PI*2);ctx.fill()}}for(let i=balloons.length-1;i>=0;i--){if(balloons[i]){balloons[i].update();balloons[i].draw(ctx);if(balloons[i].y+balloons[i].radius<-50)balloons.splice(i,1)}else balloons.splice(i,1)}for(let i=particles.length-1;i>=0;i--){if(particles[i]){particles[i].update();particles[i].draw(ctx);if(particles[i].life<=0)particles.splice(i,1)}else particles.splice(i,1)}requestAnimationFrame(gameLoop)}
+function resetGame(){balloons=[];particles=[];score=0;goldRushActive=false;scoreSpan.textContent='0';levelBar.style.width='0%';gameContainer.classList.remove('rich');if(goldRushTimer)clearTimeout(goldRushTimer);if(spawnInterval)clearInterval(spawnInterval);gameActive=true;missionNameSpan.textContent=missions[selectedMission].name+' '+missions[selectedMission].icon;spawnInterval=setInterval(spawnBalloon,1200);for(let i=0;i<3;i++)setTimeout(()=>{if(gameActive)spawnBalloon()},i*400)}
+canvas.addEventListener('click',handleClick);canvas.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];handleClick({clientX:t.clientX,clientY:t.clientY})},{passive:false});
+startBtn.addEventListener('click',()=>{initAudio();mainMenu.style.display='none';missionSelect.style.display='flex'});
+howToBtn.addEventListener('click',()=>howToPlay.style.display='flex');
+backBtn.addEventListener('click',()=>howToPlay.style.display='none');
+backToMenuBtn.addEventListener('click',()=>{missionSelect.style.display='none';mainMenu.style.display='flex'});
+missionCards.forEach(card=>{card.addEventListener('click',()=>{missionCards.forEach(c=>c.classList.remove('selected'));card.classList.add('selected');selectedMission=card.dataset.mission;setTimeout(()=>{missionSelect.style.display='none';initAudio();resetGame()},300)})});
+window.addEventListener('load',()=>gameLoop());
+})();
+</script>
 </body>
 </html>
